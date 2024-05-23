@@ -1,0 +1,93 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  // previewFeatures = []
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+model User {
+  id             String    @id @default(cuid())
+  username       String    @unique
+  password       String
+  profile        Profile?
+  assignedItems  Item[]    @relation("assignedItems")
+  updatedItems   Item[]    @relation("updatedBy")
+  createdItems   Item[]    @relation("createdBy")
+  role           Role      @relation(fields: [roleId], references: [id])
+  roleId         String
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @updatedAt
+  createdById    String?
+  updatedById    String?
+  baseState      BaseState @default(ACTIVE)
+}
+
+model Invite {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  createdAt   DateTime? @default(now())
+  createdById String?
+  activate    Boolean   @default(false)
+  link        String
+  role        Role?     @relation("invites", fields: [roleId], references: [id])
+  roleId      String?
+}
+
+model Profile {
+  id          String  @id @default(cuid())
+  user        User    @relation(fields: [userId], references: [id])
+  userId      String  @unique
+  email       String  @unique
+  locale      String  @default("en-US")
+  phoneNumber String?
+  firstname   String?
+  lastname    String?
+  photo       String?
+}
+
+model Item {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  itemState   ItemState @default(TODO)
+  baseState   BaseState @default(ACTIVE)
+  dueDate     DateTime?
+  assignee    User?     @relation("assignedItems", fields: [assigneeId], references: [id])
+  assigneeId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdBy   User      @relation("createdBy", fields: [createdById], references: [id])
+  createdById String
+  updatedBy   User?     @relation("updatedBy", fields: [updatedById], references: [id])
+  updatedById String?
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  permissions Json     @default("{}")
+  users       User[]
+  invites     Invite[] @relation("invites")
+}
+
+enum ItemState {
+  TODO
+  DONE
+}
+
+enum BaseState {
+  DELETED
+  ACTIVE
+}
+
+enum Sort {
+  asc
+  desc
+}

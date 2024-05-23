@@ -1,0 +1,98 @@
+mutation Login($data: LoginInput!) {
+  login(data: $data) {
+    accessToken
+    refreshToken
+    user {
+      ...MeFields
+    }
+  }
+}
+
+mutation SignUp($data: UserAddInput!) {
+  signup(data: $data) {
+    accessToken
+    refreshToken
+    user {
+      ...MeFields
+    }
+  }
+}
+
+mutation ConfirmTenant($token: String!) {
+  confirmTenant(token: $token)
+}
+
+mutation ActivateUser($id: String!) {
+  activateUser(id: $id) {
+    ...MeFields
+  }
+}
+
+mutation DeactivateUser($id: String!) {
+  deactivateUser(id: $id) {
+    ...MeFields
+  }
+}
+
+mutation RefreshToken($refreshToken: JWT!) {
+  refreshToken(token: $refreshToken) {
+    ...TokenFields
+  }
+}
+
+mutation UpdateProfile($id: String!, $data: UpdateProfileInput!) {
+  updateProfile(id: $id, data: $data) {
+    ...ProfileFields
+  }
+}
+
+mutation UpdateUserRole($id: String!, $data: UpdateUserRoleInput!) {
+  updateUserRole(id: $id, data: $data) {
+    ...MeFields
+  }
+}
+
+mutation ChangePassword($data: ChangePasswordInput!) {
+  changePassword(data: $data) {
+    ...MeFields
+  }
+}
+
+mutation CreateItem($data: CreateItemInput!) {
+  createItem(data: $data) {
+    ...ItemFields
+  }
+}
+
+mutation UpdateItem($id: String!, $data: UpdateItemInput!) {
+  updateItem(id: $id, data: $data) {
+    ...ItemFields
+  }
+}
+
+mutation DeleteItem($id: String!) {
+  deleteItem(id: $id) {
+    ...ItemFields
+  }
+}
+
+mutation UpdateLocale($id: String!, $data: UpdateProfileInput!) {
+  updateProfile(id: $id, data: $data) {
+    ...ProfileFields
+  }
+}
+
+mutation CreateInvite($data: InviteInput!) {
+  createInvite(data: $data) {
+    id
+    email
+    link
+  }
+}
+
+mutation DecodeInviteToken($token: String!) {
+  decodeInviteToken(token: $token) {
+    id
+    email
+  }
+}

@@ -1,0 +1,205 @@
+---
+name: multi_service_parallel_build
+# use workflow_dispatch to run the GHA manually
+# workflow_dispatch:
+# use on: push: tags to run the GHA on tag change
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+-?*']
+env:
+  TAG: ${{ github.ref }}
+  REPO_NAME: ${{ github.repository }}
+  WL_NAME: <WL_NAME>
+  REPO: "git@github.com:<GIT_ORGANIZATION_NAME>/<WL_REPO_NAME>.git"
+  GITOPS_REPO: "git@github.com:<GIT_ORGANIZATION_NAME>/<WL_GITOPS_REPO_NAME>.git"
+  ARGO_NAMESPACE: wl-<WL_NAME>-dev
+  SEMVER_REGEX: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
+  USE_CACHE: true # true or false
+  USE_MIRROR: true # true or anything
+  UP_TAGS: false # false or anything, or not specified
+  BUILD: true # true or anything
+jobs:
+  multi_build:
+    runs-on:
+      group: <GIT_RUNNER_GROUP_NAME>
+      labels: self-hosted
+    steps:
+      - name: semver_chk
+        # check version string SEMVER format
+        run: |
+          TAG=`basename $TAG`
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo $TAG | grep -P $SEMVER_REGEX || { echo "Not a SEMVER tag, exitig."; exit 1; }
+      - name: hostname_and_uname
+        run: |
+          hostname
+          uname -a
+          if [[ $( hostname | grep azure ) ]]; then  echo "It's azure runner. Exiting."; exit 1; fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: 'true'
+      - name: argo_cli_install
+        run: |
+          # download and install argo binary
+           curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.5.4/argo-linux-amd64.gz
+           gunzip argo-linux-amd64.gz
+           chmod +x argo-linux-amd64
+           sudo mv ./argo-linux-amd64 /usr/local/bin/argo
+           argo version
+      - name: build
+        # parallel kaniko build
+        run: |
+          # uncomment line below to disable build chain to test other steps quickly
+          # exit 0;
+          set -eu
+          declare -a CHANGED_WLS_DIRS
+          echo "TAG: $TAG"
+          DIFF_TAGS=`git tag --sort=-creatordate | grep -P $SEMVER_REGEX | head -2`
+          if [[ `echo $DIFF_TAGS | wc -w` -gt 1 ]]
+          then
+            LIST_DIR=`git diff-tree --no-commit-id --dirstat=files,0  -r $DIFF_TAGS | awk  '{print $2;};' | sed -r 's/^([^/]*\/[^/]*)\/.*$/\1/'| uniq`
+            if [[ "$LIST_DIR" =~ libs ]] && [[ -d apps ]]; then LIST_DIR=`ls -1d apps/*`;fi
+          elif [[ -d apps ]]
+          then
+            LIST_DIR=`ls -1d apps/*`
+          else
+            LIST_DIR=`ls -1d */ | sed -r 's/\/$//'`
+          fi
+          echo "Directories w changes: "$LIST_DIR
+          echo "Diff tags: "$DIFF_TAGS
+          for DIR in $LIST_DIR
+          do
+            DIR=$(echo $DIR|sed -r 's/\/src.*$//')
+            if [[ -e $DIR/src && -e $DIR/Dockerfile ]]
+            then
+              DIR=`echo $DIR| sed -r 's/\/$//'`
+              CHANGED_WLS_DIRS+=("$DIR")
+            fi
+          done
+          echo "CHANGED_WLS_DIRS=${CHANGED_WLS_DIRS[@]}">> "$GITHUB_ENV"
+          for SVC_DIR in ${CHANGED_WLS_DIRS[@]}; do CHANGED_SVC_LIST+=($(basename $SVC_DIR));done
+          echo "CHANGED_SVC_LIST=${CHANGED_SVC_LIST[@]}" >> "$GITHUB_ENV"
+          # kaniko parallel start
+          echo "Check the workflows status at https://<CI_INGRESS_URL>/workflows/${ARGO_NAMESPACE}"
+          if [[ $USE_MIRROR != "true" ]]; then MIRROR_OPTION_STR="-p kaniko-registry-mirror=NOMIRROR"; else MIRROR_OPTION_STR=""; fi
+          SVC_PARAMS=()
+          for wl_service_dir in ${CHANGED_WLS_DIRS[@]}
+          do
+              wl_service=`basename ${wl_service_dir}`
+              if [[ ${wl_service_dir} =~ ^app ]]
+                then
+                    DOCKERFILE="${wl_service_dir}/Dockerfile"
+                    BUILD_CONTEXT=""
+                else
+                    DOCKERFILE="Dockerfile"
+                    BUILD_CONTEXT="${wl_service_dir}"
+              fi
+              SVC_PARAMS+=("{\"wl-service-dir\": \"$wl_service_dir\", \"wl-service-name\": \"$wl_service\", \"dockerfile\": \"$DOCKERFILE\", \"build-context\": \"$BUILD_CONTEXT\"}, ")
+          done
+          SVC_PARAMS_STR=\[$(echo "${SVC_PARAMS[@]}" | sed -r 's/,\s*$//')\]
+          echo "SVC_PARAMS: " "$SVC_PARAMS_STR"
+          [[ ${BUILD,} == true ]] || exit 0
+          argo submit .argo/build-wow-wf.yaml --serviceaccount argo-workflow \
+            -p p-list="$SVC_PARAMS_STR" \
+            $MIRROR_OPTION_STR \
+            -p kaniko-cache=$USE_CACHE \
+            -p repo=$REPO \
+            -p workload-name=$WL_NAME \
+            -p tag=$TAG \
+            --wait && echo -e "----------------------------------------\nAll builds succeeded."
+      - name: trivy_libs
+        run: |-
+          LIBS_DIR=libs
+          LIBS_SVC=libs
+          if [ -d apps -a -d libs ]
+          then
+            echo "Submitting trivy-fs workflow for shared libs directory ["${LIBS_DIR}"]:"
+            argo submit .argo/trivy-libs-wf.yaml --serviceaccount argo-workflow \
+            --generate-name $WL_NAME-trivy-libs- \
+            -p tag=$TAG \
+            -p workload-name=$WL_NAME \
+            -p wl-service-name="${LIBS_SVC}" \
+            -p wl-service-dir="${LIBS_DIR}" \
+            -p repo=$REPO \
+            --log \
+            --wait   && echo -e "-----------------------------------------------\nTrivy-fs for shared libs directory ["${LIBS_DIR}"] succeeded"
+          fi
+# parallel crane
+      - name: registry_put
+        # put images into the Harbor image repo
+        env:
+          CHANGED_WLS_DIRS: ${{ env.CHANGED_WLS_DIRS }}
+          CHANGED_SVC_LIST: ${{ env.CHANGED_SVC_LIST }}
+        run: |-
+          echo "CHANGED workload-services  directories (array): ${CHANGED_WLS_DIRS[@]}"
+            CHANGED_SVC_LIST=($CHANGED_SVC_LIST)
+            CHANGED_SVC_LIST_JSON=$(jq --compact-output --null-input '$ARGS.positional' --args -- "${CHANGED_SVC_LIST[@]}")
+            echo "Submitting crane workflow for $CHANGED_SVC_LIST_JSON:"
+            argo submit .argo/crane-p-wf.yaml --serviceaccount argo-workflow \
+            --generate-name $WL_NAME-wf-crane- \
+            -p tag=$TAG \
+            -p workload-name=$WL_NAME \
+            -p service-list="$CHANGED_SVC_LIST_JSON" \
+            --log \
+            --wait   && echo -e "-----------------------------------------------\nAll crane puts succeeded."
+      # up all versions if there is an "apps" structure
+      - name: up_tags
+        # up  tags for  unchanged services in apps structure
+        run: |-
+          [[ ${UP_TAGS,} == "false" ]] && exit 0
+          declare -a SVC_LIST
+          declare -a TAG_SVC_LIST
+          declare -a APPS_SVC_LIST
+          if [[ -d apps ]]
+          then
+            LIST_DIR=`ls -1d apps/*`
+            for DIR in $LIST_DIR
+            do
+              if [[ -e $DIR/src && -e $DIR/Dockerfile ]]
+              then
+                DIR=`echo $DIR| sed -r 's/\/$//'`
+                APPS_SVC_LIST+=($(basename $DIR))
+                if [[ "${CHANGED_WLS_DIRS[@]/$DIR/}" == "${CHANGED_WLS_DIRS[@]}" ]]
+                then
+                  SVC_NAME=$(basename $DIR)
+                  SVC_LIST+=("$SVC_NAME")
+                fi
+              fi
+            done
+            TAG_SVC_LIST_JSON=$(jq --compact-output --null-input '$ARGS.positional' --args -- "${SVC_LIST[@]}")
+            echo "APPS_SVC_LIST=${APPS_SVC_LIST[@]}">> "$GITHUB_ENV"
+            if [[ $TAG_SVC_LIST_JSON != "" ]]
+            then
+              argo submit .argo/crane-img-tag-wf.yaml --serviceaccount argo-workflow \
+                -p service-list="$TAG_SVC_LIST_JSON" \
+                -p repo=$REPO \
+                -p workload-name=$WL_NAME \
+                -p tag=$TAG \
+                --log \
+                --wait && echo -e "----------------------------------------\nAll services tagging succeeded."
+            fi
+          fi
+
+      - name: version_change
+        # change version in gitops repo
+        env:
+          APPS_SVC_LIST: ${{ env.APPS_SVC_LIST }}
+          CHANGED_SVC_LIST: ${{ env.CHANGED_SVC_LIST }}
+        run: |-
+          echo "CHANGED workload-services: $CHANGED_SVC_LIST"
+          if [[ $APPS_SVC_LIST != "" ]]
+          then
+             VERSION_CHANGER_SVC_LIST="$APPS_SVC_LIST"
+          else
+              VERSION_CHANGER_SVC_LIST="$CHANGED_SVC_LIST"
+          fi
+               argo submit .argo/version-changer-wf.yaml \
+              -p gitops-repo=$GITOPS_REPO \
+              -p wl-service-list="$VERSION_CHANGER_SVC_LIST" \
+              -p env-path="gitops/environments/envs" \
+              -p env-name="dev" \
+              -p tag=${TAG} \
+              --serviceaccount argo-workflow \
+              --wait --log

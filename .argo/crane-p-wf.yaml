@@ -1,0 +1,45 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: crane-wf-
+  labels:
+    stage: crane
+spec:
+  arguments:
+    parameters:
+      - name: registry
+        value: <REGISTRY_REGISTRY_URL>
+      - name: dockerhub-registry-proxy
+        value: <REGISTRY_DOCKERHUB_PROXY>
+      - name: gcr-registry-proxy
+        value: <REGISTRY_GCR_PROXY>
+      - name: service-list
+        value: ""
+  entrypoint: crane-loop
+  templateDefaults:
+    timeout: 30m
+    retryStrategy:
+      limit: "2"
+  imagePullSecrets:
+    - name: proxy-docker-config
+  volumes:
+    - name: crane-secret
+      secret:
+        secretName: push-docker-config
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+  templates:
+    - name: crane-loop
+      steps:
+        - - name: "crane-loop-element"
+            arguments:
+              parameters:
+                - name: wl-service-name
+                  value: "{{item}}"
+            templateRef:
+              name: crane-s3-p-cwft
+              template: crane
+              clusterScope: true
+            withParam: "{{workflow.parameters.service-list}}"

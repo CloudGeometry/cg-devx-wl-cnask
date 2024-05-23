@@ -1,0 +1,56 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: version-changer-wf
+spec:
+  arguments:
+    parameters:
+      - name: registry
+        value: <REGISTRY_REGISTRY_URL>
+      - name: dockerhub-registry-proxy
+        value: <REGISTRY_DOCKERHUB_PROXY>
+      - name: gcr-registry-proxy
+        value: <REGISTRY_GCR_PROXY>
+      - name: workload-name
+        value: <WL_NAME>
+      - name: gitops-repo
+        value: <WL_GITOPS_REPO_NAME>
+      - name: tag
+        value: ''
+      - name: wl-service-list
+        value: [<WL_SERVICE_NAME>]
+      - name: env-path
+        value: ''
+      - name: env-name
+        value: ''
+  entrypoint: version-changer-seq
+  imagePullSecrets:
+    - name: proxy-docker-config
+  # onExit: exit-handler
+  volumes:
+    - name: ssh-key-vol
+      secret:
+        secretName: ci-secrets
+        defaultMode: 256
+    - name: kaniko-secret
+      secret:
+        secretName: proxy-docker-config
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+  templates:
+    - name: version-changer-seq
+      dag:
+        tasks:
+          - name: version-changer
+            templateRef:
+              name: version-changer-cwft
+              template: version-changer
+              clusterScope: true
+    - name: exit-handler
+      container:
+        image: '{{workflow.parameters.dockerhub-registry-proxy}}/library/alpine'
+        imagePullPolicy: IfNotPresent
+        command: [sh, -c]
+        args: ['echo  {{workflow.name}} {{workflow.status}} {{workflow.duration}}']

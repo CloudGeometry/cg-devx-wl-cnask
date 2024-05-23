@@ -1,0 +1,110 @@
+fragment UserFields on User {
+  id
+  username
+  baseState
+}
+
+fragment TokenFields on Token {
+  accessToken
+  refreshToken
+}
+
+fragment AuthFields on Auth {
+  user {
+    ...UserFields
+  }
+  accessToken
+  refreshToken
+}
+
+fragment Role on User {
+  role {
+    id
+    name
+    permissions
+  }
+}
+
+fragment ProfileFields on Profile {
+  firstname
+  lastname
+  email
+  phoneNumber
+  locale
+  photo
+}
+
+fragment MeFields on User {
+  ...UserFields
+  ...Role
+  profile {
+    ...ProfileFields
+  }
+}
+
+fragment AssigneeFields on User {
+  id
+
+  profile {
+    firstname
+    lastname
+  }
+}
+
+fragment ItemFields on Item {
+  id
+  createdAt
+  createdBy {
+    ...UserFields
+    profile {
+      firstname
+      lastname
+    }
+  }
+  updatedAt
+  updatedBy {
+    ...UserFields
+  }
+  title
+  description
+  dueDate
+  itemState
+  assignee {
+    ...AssigneeFields
+  }
+}
+
+fragment PageInfoFields on PageInfo {
+  endCursor
+  startCursor
+  hasNextPage
+  hasPreviousPage
+}
+
+fragment PaginatedItemsEdgesFields on PaginatedItems {
+  edges {
+    node {
+      ...ItemFields
+    }
+    cursor
+  }
+  totalCount
+  pageInfo {
+    ...PageInfoFields
+  }
+}
+
+fragment PaginatedItemNodesFields on PaginatedItems {
+  nodes {
+    ...ItemFields
+  }
+  totalCount
+  pageInfo {
+    ...PageInfoFields
+  }
+}
+
+fragment RoleFields on Role {
+  id
+  name
+}

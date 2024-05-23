@@ -1,0 +1,49 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id String [pk]
+  username String [unique, not null]
+  password String [not null]
+  tenants Tenant [not null]
+  tenantsUpdatedBy Tenant [not null]
+}
+
+Table Tenant {
+  id String [pk]
+  alias String [unique]
+  config Json [default: '[]']
+  owner String
+  email String [unique]
+  verificationLink String
+  state TenantState [not null, default: 'ACTIVE']
+  baseState BaseState [not null, default: 'ACTIVE']
+  status TenantStatus [not null, default: 'NEW']
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  createdBy User
+  createdById String
+  updatedBy User
+  updatedById String
+}
+
+Enum BaseState {
+  DELETED
+  ACTIVE
+}
+
+Enum TenantState {
+  DEACTIVATE
+  ACTIVE
+}
+
+Enum TenantStatus {
+  NEW
+  VERIFIED
+  CREATED
+}
+
+Ref: Tenant.createdById > User.id
+
+Ref: Tenant.updatedById > User.id

@@ -1,0 +1,95 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id String [pk]
+  username String [unique, not null]
+  password String [not null]
+  profile Profile
+  assignedItems Item [not null]
+  updatedItems Item [not null]
+  createdItems Item [not null]
+  role Role [not null]
+  roleId String [not null]
+  createdAt DateTime [default: `now()`]
+  updatedAt DateTime
+  createdById String
+  updatedById String
+  baseState BaseState [not null, default: 'ACTIVE']
+}
+
+Table Invite {
+  id String [pk]
+  email String [unique, not null]
+  createdAt DateTime [default: `now()`]
+  createdById String
+  activate Boolean [not null, default: false]
+  link String [not null]
+  role Role
+  roleId String
+}
+
+Table Profile {
+  id String [pk]
+  user User [not null]
+  userId String [unique, not null]
+  email String [unique, not null]
+  locale String [not null, default: 'en-US']
+  phoneNumber String
+  firstname String
+  lastname String
+  photo String
+}
+
+Table Item {
+  id String [pk]
+  title String [not null]
+  description String
+  itemState ItemState [not null, default: 'TODO']
+  baseState BaseState [not null, default: 'ACTIVE']
+  dueDate DateTime
+  assignee User
+  assigneeId String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  createdBy User [not null]
+  createdById String [not null]
+  updatedBy User
+  updatedById String
+}
+
+Table Role {
+  id String [pk]
+  name String [unique, not null]
+  permissions Json [not null, default: '{}']
+  users User [not null]
+  invites Invite [not null]
+}
+
+Enum ItemState {
+  TODO
+  DONE
+}
+
+Enum BaseState {
+  DELETED
+  ACTIVE
+}
+
+Enum Sort {
+  asc
+  desc
+}
+
+Ref: User.roleId > Role.id
+
+Ref: Invite.roleId > Role.id
+
+Ref: Profile.userId - User.id
+
+Ref: Item.assigneeId > User.id
+
+Ref: Item.createdById > User.id
+
+Ref: Item.updatedById > User.id

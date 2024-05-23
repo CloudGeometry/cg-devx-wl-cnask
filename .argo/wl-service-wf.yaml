@@ -1,0 +1,86 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wl-wf-
+spec:
+  arguments:
+    parameters:
+      - name: registry
+        value: <REGISTRY_REGISTRY_URL>
+      - name: dockerhub-registry-proxy
+        value: <REGISTRY_DOCKERHUB_PROXY>
+      - name: gcr-registry-proxy
+        value: <REGISTRY_GCR_PROXY>
+      - name: workload-name
+        value: <WL_NAME>
+      - name: wl-service-name
+        value: <WL_SERVICE_NAME>
+      - name: wl-service-dir
+        value: <WL_SERVICE_NAME>
+      - name: repo
+        value: <WL_REPO_NAME>
+      - name: tag
+        value: ''
+  volumeClaimTemplates:
+    - metadata:
+        name: build
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 8Gi
+  entrypoint: ci-sequence
+  templateDefaults:
+    timeout: 30m
+    retryStrategy:
+      limit: 2
+  imagePullSecrets:
+    - name: proxy-docker-config
+  #  onExit: exit-handler
+  volumes:
+    - name: kaniko-secret
+      secret:
+        secretName: proxy-docker-config
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+    - name: crane-secret
+      secret:
+        secretName: push-docker-config
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+  templates:
+    - name: ci-sequence
+      dag:
+        tasks:
+          - name: git-clone
+            templateRef:
+              name: git-clone-cwft
+              template: git-clone
+              clusterScope: true
+          - name: kaniko
+            dependencies: [git-clone]
+            templateRef:
+              name: kaniko-cwft
+              template: kaniko
+              clusterScope: true
+          - name: trivy-fs-scan
+            dependencies: [git-clone]
+            templateRef:
+              name: trivy-fs-scan-cwft
+              template: trivy-fs-scan
+              clusterScope: true
+          - name: crane
+            dependencies: [git-clone, kaniko]
+            templateRef:
+              name: crane-cwft
+              template: crane
+              clusterScope: true
+    - name: exit-handler
+      container:
+        image: '{{workflow.parameters.dockerhub-registry-proxy}}/library/alpine'
+        imagePullPolicy: IfNotPresent
+        command: [sh, -c]
+        args: ['echo  {{workflow.name}} {{workflow.status}} {{workflow.duration}}']

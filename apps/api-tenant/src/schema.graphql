@@ -1,0 +1,130 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Token {
+  """JWT access token"""
+  accessToken: JWT!
+
+  """JWT refresh token"""
+  refreshToken: JWT!
+}
+
+"""
+A field whose value is a JSON Web Token (JWT): https://jwt.io/introduction.
+"""
+scalar JWT
+
+type Auth {
+  """JWT access token"""
+  accessToken: JWT!
+
+  """JWT refresh token"""
+  refreshToken: JWT!
+  user: User!
+}
+
+type User {
+  id: ID!
+  username: String!
+}
+
+type Tenant {
+  id: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  baseState: String!
+  createdBy: User
+  updatedBy: User
+  alias: String!
+  config: [JSONObject!]
+  email: String
+  verificationLink: String
+  status: TenantStatus!
+  owner: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""
+The `JSONObject` scalar type represents JSON objects as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSONObject @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
+enum TenantStatus {
+  NEW
+  VERIFIED
+  CREATED
+}
+
+type Query {
+  """Return current user"""
+  me: User!
+
+  """Get all tenants"""
+  tenants: [Tenant!]!
+
+  """Get tenant by id"""
+  tenant(id: String!): Tenant!
+
+  """Get tenant by alias"""
+  getTenantByAlias(alias: String!): Tenant!
+}
+
+type Mutation {
+  """Create user"""
+  signup(data: UserAddInput!): Auth!
+
+  """Login user, return token"""
+  login(data: LoginInput!): Auth!
+
+  """Refresh token"""
+  refreshToken(token: JWT!): Token!
+
+  """Change user password"""
+  changePassword(data: ChangePasswordInput!): User!
+
+  """Registrate tenant"""
+  registrateTenant(data: RegistrateTenantInput!): Tenant!
+
+  """Decode invite token"""
+  decodeInviteToken(token: String!): Tenant
+
+  """Create Tenant database"""
+  bootstrapTenant(id: String!): Tenant
+
+  """Update tenant"""
+  updateTenant(id: String!, data: UpdateTenantInput!): Tenant!
+
+  """Delete tenant"""
+  deleteTenant(id: String!): Tenant!
+}
+
+input UserAddInput {
+  username: String!
+  password: String!
+}
+
+input LoginInput {
+  username: String!
+  password: String!
+}
+
+input ChangePasswordInput {
+  oldPassword: String!
+  newPassword: String!
+}
+
+input RegistrateTenantInput {
+  alias: String!
+  email: String!
+}
+
+input UpdateTenantInput {
+  status: TenantStatus! = NEW
+  config: [JSONObject!]
+  owner: String
+}

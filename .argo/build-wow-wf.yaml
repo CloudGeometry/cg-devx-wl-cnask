@@ -1,0 +1,103 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: build-loop-
+  labels:
+    stage: build
+spec:
+  imagePullSecrets:
+    - name: proxy-docker-config
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: p-list
+      - name: kaniko-registry-mirror
+        value: <REGISTRY_REGISTRY_URL>
+      - name: dockerhub-registry-proxy
+        value: <REGISTRY_DOCKERHUB_PROXY>
+      - name: gcr-registry-proxy
+        value: <REGISTRY_GCR_PROXY>
+      - name: kaniko-cache-repo
+        value: <REGISTRY_REGISTRY_URL>
+      - name: kaniko-cache
+        value: "true"
+  templates:
+    - name: main
+      steps:
+        -   - name: main-loop
+              template: main-loop
+              arguments:
+                parameters:
+                  - name: dockerfile
+                    value: "{{item.dockerfile}}"
+                  - name: build-context
+                    value: "{{item.build-context}}"
+                  - name: wl-service-name
+                    value: "{{item.wl-service-name}}"
+                  - name: wl-service-dir
+                    value: "{{item.wl-service-dir}}"
+              withParam: "{{workflow.parameters.p-list}}"
+    - name: main-loop
+      inputs:
+        parameters:
+          - name: dockerfile
+          - name: build-context
+          - name: wl-service-name
+          - name: wl-service-dir
+      synchronization:
+        semaphore:
+          configMapKeyRef:
+            name: build-wow-semaphore-cm
+            key: wow
+      resource:
+        action: create
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: build-service-{{inputs.parameters.wl-service-name}}-
+            labels:
+               stage: service-build
+               service: {{inputs.parameters.wl-service-name}}
+          spec:
+            artifactRepositoryRef:
+              configMap: wl-artifactory-cm
+              key: wl-pod-log-artifact-repository
+            arguments:
+              parameters:
+                - name: dockerhub-registry-proxy
+                  value: {{workflow.parameters.dockerhub-registry-proxy}}
+                - name: kaniko-registry-mirror
+                  value: {{workflow.parameters.kaniko-registry-mirror}}
+                - name: gcr-registry-proxy
+                  value: {{workflow.parameters.gcr-registry-proxy}}
+                - name: kaniko-cache-repo
+                  value: {{workflow.parameters.kaniko-cache-repo}}
+                - name: kaniko-cache
+                  value: {{workflow.parameters.kaniko-cache}}
+                - name: tag
+                  value: {{workflow.parameters.tag}}
+                - name: repo
+                  value: {{workflow.parameters.repo}}
+                - name: workload-name
+                  value: {{workflow.parameters.workload-name}}
+                - name: dockerfile
+                  value: {{inputs.parameters.dockerfile}}
+                - name: build-context
+                  value: "{{inputs.parameters.build-context}}"
+                - name: wl-service-dir
+                  value: {{inputs.parameters.wl-service-dir}}
+                - name: wl-service-name
+                  value: {{inputs.parameters.wl-service-name}}
+            podGC:
+              deleteDelayDuration: 900s
+            serviceAccountName: argo-workflow
+            imagePullPolicy: IfNotPresent
+            imagePullSecrets:
+              - name: proxy-docker-config
+            workflowTemplateRef:
+              name: build-chain-p-cwft
+              clusterScope: true
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase in (Failed, Error)

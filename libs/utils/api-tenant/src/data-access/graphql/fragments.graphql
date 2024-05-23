@@ -1,0 +1,36 @@
+fragment TenantFields on Tenant {
+  id
+  createdAt
+  updatedAt
+  baseState
+  createdBy {
+    ...UserFields
+  }
+  updatedBy {
+    ...UserFields
+  }
+  alias
+  email
+  verificationLink
+  status
+  config
+  owner
+}
+
+fragment UserFields on User {
+  id
+  username
+}
+
+fragment TokenFields on Token {
+  accessToken
+  refreshToken
+}
+
+fragment AuthFields on Auth {
+  accessToken
+  refreshToken
+  user {
+    ...UserFields
+  }
+}

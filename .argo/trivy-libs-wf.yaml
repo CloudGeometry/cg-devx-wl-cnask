@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: trivy-fs-libs-
+  labels:
+     stage: trivy-libs
+     service: libs
+spec:
+  entrypoint: trivy-fs-scan
+  arguments:
+    parameters:
+      - name: dockerhub-registry-proxy
+        value: <REGISTRY_DOCKERHUB_PROXY>
+  podGC:
+    deleteDelayDuration: 900s
+  serviceAccountName: argo-workflow
+  imagePullSecrets:
+    - name: proxy-docker-config
+  workflowTemplateRef:
+    name: trivy-fs-s3-cwft
+    clusterScope: true
+

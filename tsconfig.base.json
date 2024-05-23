@@ -1,0 +1,30 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2018",
+    "module": "esnext",
+    "lib": ["ES2018", "DOM", "WebWorker"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@cnask/casl/feature": ["libs/casl/feature/src/index.ts"],
+      "@cnask/examples": ["libs/examples/src/index.ts"],
+      "@cnask/i18n/feature": ["libs/i18n/feature/src/index.ts"],
+      "@cnask/i18n/ui": ["libs/i18n/ui/src/index.ts"],
+      "@cnask/shared/feature": ["libs/shared/feature/src/index.ts"],
+      "@cnask/shared/ui": ["libs/shared/ui/src/index.ts"],
+      "@cnask/shared/utils": ["libs/shared/utils/src/index.ts"],
+      "@cnask/utils/api-client": ["libs/utils/api-client/src/index.ts"],
+      "@cnask/utils/api-tenant": ["libs/utils/api-tenant/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

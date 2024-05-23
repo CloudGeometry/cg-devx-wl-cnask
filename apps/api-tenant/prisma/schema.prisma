@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+model User {
+  id             String   @id @default(cuid())
+  username       String   @unique
+  password       String
+  tenants        Tenant[] @relation("tenants")
+  tenantsUpdatedBy Tenant[]   @relation("updatedBy")
+}
+
+model Tenant {
+  id          String        @id @default(cuid())
+  alias       String?       @unique
+  config      Json?         @default("[]")
+  owner       String?
+  email       String?       @unique
+  verificationLink String?
+  state       TenantState   @default(ACTIVE)
+  baseState   BaseState     @default(ACTIVE)
+  status      TenantStatus  @default(NEW)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime?     @updatedAt
+  createdBy   User?         @relation("tenants", fields: [createdById], references: [id])
+  createdById String?
+  updatedBy   User?         @relation("updatedBy", fields: [updatedById], references: [id])
+  updatedById String?
+}
+
+enum BaseState {
+  DELETED
+  ACTIVE
+}
+
+enum TenantState {
+  DEACTIVATE
+  ACTIVE
+}
+
+enum TenantStatus {
+  NEW
+  VERIFIED
+  CREATED
+}

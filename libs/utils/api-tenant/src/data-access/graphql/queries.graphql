@@ -1,0 +1,17 @@
+query Tenant($id: String!) {
+  tenant(id: $id) {
+    ...TenantFields
+  }
+}
+
+query Tenants {
+  tenants {
+    ...TenantFields
+  }
+}
+
+query Me {
+  me {
+    ...UserFields
+  }
+}

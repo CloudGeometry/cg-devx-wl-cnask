@@ -1,0 +1,58 @@
+{
+  "name": "cnask",
+  "contributors": [
+    {
+      "name": "Alexander Ulyanov",
+      "email": "alexu@cloudgeometry.io",
+      "url": "https://github.com/all4code"
+    },
+    {
+      "name": "Anton Trautman",
+      "email": "atrautman@cloudgeometry.io",
+      "url": "https://github.com/anton-trautman"
+    },
+    {
+      "name": "Artem Katnov",
+      "email": "akatnov@cloudgeometry.io",
+      "url": "https://github.com/cmorrec"
+    },
+    {
+      "name": "Danil Malkin",
+      "email": "dmalkin@cloudgeometry.io",
+      "url": "https://github.com/theoc1"
+    },
+    {
+      "name": "Irina Groilova",
+      "email": "igroilova@cloudgeometry.io",
+      "url": "https://github.com/igroylova"
+    }
+  ],
+  "engines": {
+    "node": ">=18.15.0"
+  },
+  "resolutions": {
+    "comment": "workaround for breacking changes \n https://github.com/ramda/types/issues/64\n https://github.com/ramda/ramda/issues/3415",
+    "types-ramda": "0.29.4"
+  },
+  "version": "0.0.1",
+  "license": "Apache-2.0",
+  "scripts": {
+    "lint-all": "cd apps/api && npm run lint && cd ../api-tenant && npm run lint && cd ../web-client && npm run lint && cd ../web-tenant-admin && npm run lint && cd ../../",
+    "pre:push:lint-all": "cd apps/api && npm run pre:push:lint && cd ../api-tenant && npm run pre:push:lint && cd ../web-client && npm run pre:push:lint && cd ../web-tenant-admin && npm run pre:push:lint && cd ../../",
+    "prepare": "husky"
+  },
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
+  "repository": "git@github.com:CloudGeometry/cg-devx-wl-cnask.git",
+  "devDependencies": {
+    "husky": "^9.0.11"
+  },
+  "husky": {
+    "hooks": {
+      "pre-push": "npm run pre:push:lint-all"
+    }
+  }
+}

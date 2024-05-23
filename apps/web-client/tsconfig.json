@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "allowJs": false,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "target": "es2017",
+    "strict": true,
+    "types": ["node", "vite/client", "vitest/importMeta"]
+  },
+  "exclude": ["node_modules", "dist", "Dockerfile"],
+  "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
+  "extends": "../../tsconfig.base.json"
+}

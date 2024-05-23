@@ -1,0 +1,35 @@
+mutation Login($data: LoginInput!) {
+  login(data: $data) {
+    ...AuthFields
+  }
+}
+
+mutation RefreshToken($token: JWT!) {
+  refreshToken(token: $token) {
+    ...TokenFields
+  }
+}
+
+mutation UpdateTenant($id: String!, $data: UpdateTenantInput!) {
+  updateTenant(id: $id, data: $data) {
+    ...TenantFields
+  }
+}
+
+mutation DeleteTenant($id: String!) {
+  deleteTenant(id: $id) {
+    ...TenantFields
+  }
+}
+
+mutation RegistrateTenant($data: RegistrateTenantInput!) {
+  registrateTenant(data: $data) {
+    ...TenantFields
+  }
+}
+
+mutation BootstrapTenant($id: String!) {
+  bootstrapTenant(id: $id) {
+    ...TenantFields
+  }
+}

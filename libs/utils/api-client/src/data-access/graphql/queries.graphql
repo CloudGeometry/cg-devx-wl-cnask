@@ -1,0 +1,71 @@
+query Me {
+  me {
+    ...MeFields
+  }
+}
+
+query FirstItemsAfterUseEdges(
+  $filter: ItemFilterInput
+  $first: Int
+  $after: String
+  $orderBy: ItemOrderByInput
+) {
+  items(filter: $filter, first: $first, after: $after, orderBy: $orderBy) {
+    ...PaginatedItemsEdgesFields
+  }
+}
+
+query LastItemsBeforeUseEdges(
+  $state: ItemFilterInput
+  $last: Int
+  $before: String
+  $orderBy: ItemOrderByInput
+) {
+  items(filter: $state, last: $last, before: $before, orderBy: $orderBy) {
+    ...PaginatedItemsEdgesFields
+  }
+}
+
+query FirstItemsAfterUseNodes(
+  $first: Int
+  $after: String
+  $orderBy: ItemOrderByInput
+  $filter: ItemFilterInput
+) {
+  items(filter: $filter, first: $first, after: $after, orderBy: $orderBy) {
+    ...PaginatedItemNodesFields
+  }
+}
+
+query LastItemsBeforeUseNodes(
+  $state: ItemFilterInput
+  $last: Int
+  $before: String
+  $orderBy: ItemOrderByInput
+) {
+  items(filter: $state, last: $last, before: $before, orderBy: $orderBy) {
+    ...PaginatedItemNodesFields
+  }
+}
+
+query Item($id: String!) {
+  item(id: $id) {
+    ...ItemFields
+  }
+}
+
+query Users {
+  users {
+    ...MeFields
+  }
+}
+
+query Roles {
+  roles {
+    ...RoleFields
+  }
+}
+
+query GetUploadUrl($imageFormat: String!) {
+  getUploadUrl(imageFormat: $imageFormat)
+}
