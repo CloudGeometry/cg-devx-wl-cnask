@@ -13,7 +13,7 @@ env:
   WL_NAME: <WL_NAME>
   REPO: "git@github.com:<GIT_ORGANIZATION_NAME>/<WL_REPO_NAME>.git"
   GITOPS_REPO: "git@github.com:<GIT_ORGANIZATION_NAME>/<WL_GITOPS_REPO_NAME>.git"
-  ARGO_NAMESPACE: wl-<WL_NAME>-dev
+  ARGO_NAMESPACE: wl-<WL_NAME>-build
   SEMVER_REGEX: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
   USE_CACHE: true # true or false
   USE_MIRROR: true # true or anything
