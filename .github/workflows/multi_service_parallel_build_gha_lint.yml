@@ -11,7 +11,7 @@ on:
 env:
   TAG: ${{ github.ref }}
   REPO_NAME: ${{ github.repository }}
-  ARGO_NAMESPACE: wl-vt-cnask-dev
+  ARGO_NAMESPACE: wl-<WL_NAME>-buil
   SEMVER_REGEX: ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
   USE_CACHE: true # true of false
   USE_MIRROR: true # true or anything
