@@ -45,11 +45,11 @@ spec:
           - name: build-context
           - name: wl-service-name
           - name: wl-service-dir
-      synchronization:
-        semaphore:
-          configMapKeyRef:
-            name: build-wow-semaphore-cm
-            key: wow
+      # synchronization:
+      #   semaphore:
+      #     configMapKeyRef:
+      #       name: build-wow-semaphore-cm
+      #       key: wow
       resource:
         action: create
         manifest: |
@@ -59,11 +59,12 @@ spec:
             generateName: build-service-{{inputs.parameters.wl-service-name}}-
             labels:
                stage: service-build
-               service: {{inputs.parameters.wl-service-name}}
+               service: {{inputs.parameters.wl-service-name}} 
+               workflows.argoproj.io/controller-instanceid: cgdevx 
           spec:
             artifactRepositoryRef:
               configMap: wl-artifactory-cm
-              key: wl-pod-log-artifact-repository
+              key: workload-artifact-repository
             arguments:
               parameters:
                 - name: dockerhub-registry-proxy
