@@ -43,7 +43,7 @@ jobs:
       - name: argo_cli_install
         run: |
           # download and install argo binary
-           curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.5.4/argo-linux-amd64.gz
+           curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.5.10/argo-linux-amd64.gz
            gunzip argo-linux-amd64.gz
            chmod +x argo-linux-amd64
            sudo mv ./argo-linux-amd64 /usr/local/bin/argo
