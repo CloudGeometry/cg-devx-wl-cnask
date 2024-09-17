@@ -6,6 +6,9 @@ metadata:
   labels:
     stage: crane
 spec:
+  artifactRepositoryRef:
+    configMap: wl-artifactory-cm
+    key: workload-artifact-repository
   arguments:
     parameters:
       - name: registry

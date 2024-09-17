@@ -6,6 +6,9 @@ metadata:
      stage: trivy-libs
      service: libs
 spec:
+  artifactRepositoryRef:
+    configMap: wl-artifactory-cm
+    key: workload-artifact-repository
   entrypoint: trivy-fs-scan
   arguments:
     parameters:
